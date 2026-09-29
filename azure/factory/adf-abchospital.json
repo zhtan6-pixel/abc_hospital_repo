@@ -1,0 +1,15 @@
+{
+	"name": "adf-abchospital",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "canadacentral",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "aef2c47d-e8f7-4de2-b2b9-91fe1cce875d",
+		"tenantId": "1ec43916-3eb6-4da2-a984-24557dece97e"
+	}
+}
