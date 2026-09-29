@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Warehouse",
+    "displayName": "WH_Hospital_Project",
+    "description": ""
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "a98f074c-0bf8-86c1-4638-28638ff51d2b"
+  }
+}
