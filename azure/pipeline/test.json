@@ -17,7 +17,7 @@
 				"typeProperties": {
 					"source": {
 						"type": "PostgreSqlV2Source",
-						"query": "select * from public.hospitals",
+						"query": "select * from PUBLIC.hospitals",
 						"queryTimeout": "02:00:00"
 					},
 					"sink": {
