@@ -45,7 +45,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "@activity('Read Source Tables List').output",
+						"value": "@activity('Read Source Tables List').output.value",
 						"type": "Expression"
 					},
 					"activities": [
@@ -61,7 +61,7 @@
 							"typeProperties": {
 								"variableName": "Test for now",
 								"value": {
-									"value": "@item().table_id",
+									"value": "@string(item().table_id)",
 									"type": "Expression"
 								}
 							}
