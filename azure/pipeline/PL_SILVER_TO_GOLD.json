@@ -1,0 +1,182 @@
+{
+	"name": "PL_SILVER_TO_GOLD",
+	"properties": {
+		"activities": [
+			{
+				"name": "Read Source Tables List",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select table_id, gold_table_name  \nfrom ctrl.table_config\nwhere is_active = 1 \nand stage = 'SILVER_TO_GOLD'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlTable1",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Ingest all tables",
+				"type": "ForEach",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
+				"dependsOn": [
+					{
+						"activity": "Read Source Tables List",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Read Source Tables List').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "Insert In Progress Status",
+							"type": "Script",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "LS_AzureSqlDatabase",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "insert into [ctrl].[audit_log] (\n--[audit_id]\n      [adf_run_id]\n      ,[table_id]\n      ,[stage]\n      ,[status]\n      --,[records_written]\n      ,[start_time]\n      --,[end_time]\n      --,[created_timestamp]\n)\nvalues('@{pipeline().parameters.adf_run_id}',@{item().table_id},'SOURCE_TO_SILVER','IN_PROGRESS',SYSUTCDATETIME())",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						},
+						{
+							"name": "Update Failed Status",
+							"type": "Script",
+							"dependsOn": [
+								{
+									"activity": "Landing to Bronze",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "LS_AzureSqlDatabase",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "update [ctrl].[audit_log] \nset [status] = 'Failed', [end_time] = SYSUTCDATETIME()\nwhere [adf_run_id] = '@{pipeline().parameters.adf_run_id}' and [table_id] = @{item().table_id}",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						},
+						{
+							"name": "Landing to Bronze",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Insert In Progress Status",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/abchospital-repo/abc_hospital_repo/azure-adb/Landing_to_Bronze",
+								"baseParameters": {
+									"source_system": {
+										"value": "@activity('Read Table Details').output.firstRow.source_system",
+										"type": "Expression"
+									},
+									"table_name": {
+										"value": "@activity('Read Table Details').output.firstRow.bronze_table_name",
+										"type": "Expression"
+									},
+									"landing_timestamp": {
+										"value": "@variables('start_time')",
+										"type": "Expression"
+									},
+									"source_file_format": {
+										"value": "@coalesce(activity('Read Table Details').output.firstRow.source_file_format,'')",
+										"type": "Expression"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_AzureDatabricks",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"adf_run_id": {
+				"type": "string",
+				"defaultValue": "a9"
+			}
+		},
+		"variables": {
+			"Test for now": {
+				"type": "String"
+			}
+		},
+		"annotations": []
+	}
+}
