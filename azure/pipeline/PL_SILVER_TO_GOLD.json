@@ -144,6 +144,42 @@
 								"referenceName": "LS_AzureDatabricks",
 								"type": "LinkedServiceReference"
 							}
+						},
+						{
+							"name": "Update Success Status",
+							"type": "Script",
+							"dependsOn": [
+								{
+									"activity": "Silver to Gold",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "LS_AzureSqlDatabase",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "update [ctrl].[audit_log] \nset [status] = 'SUCCESS', [end_time] = SYSUTCDATETIME(), [records_written] = @{activity('Silver to Gold').output.runOutput} \nwhere [adf_run_id] = '@{pipeline().parameters.adf_run_id}' and [table_id] = @{item().table_id}",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
 						}
 					]
 				}
