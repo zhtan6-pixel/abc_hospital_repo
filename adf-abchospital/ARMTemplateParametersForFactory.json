@@ -1,0 +1,36 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-abchospital"
+		},
+		"LS_ADLS_properties_typeProperties_url": {
+			"value": "https://abchospital.dfs.core.windows.net/"
+		},
+		"LS_AzureDatabricks_properties_typeProperties_existingClusterId": {
+			"value": "0930-043919-xzz9iw7u"
+		},
+		"LS_AzureKeyVault_properties_typeProperties_baseUrl": {
+			"value": "https://abchospital-keyvault.vault.azure.net/"
+		},
+		"LS_AzureSqlDatabase_properties_typeProperties_server": {
+			"value": "abchospital-server.database.windows.net"
+		},
+		"LS_AzureSqlDatabase_properties_typeProperties_database": {
+			"value": "sql-db-abchopital"
+		},
+		"LS_AzureSqlDatabase_properties_typeProperties_userName": {
+			"value": "sqladmin"
+		},
+		"LS_PostgreSql_properties_typeProperties_server": {
+			"value": "ep-soft-dream-arzpbyv1-pooler.c-4.us-west-2.aws.neon.tech"
+		},
+		"LS_PostgreSql_properties_typeProperties_database": {
+			"value": "hospital_data"
+		},
+		"LS_PostgreSql_properties_typeProperties_username": {
+			"value": "neondb_owner"
+		}
+	}
+}
