@@ -34,8 +34,6 @@
 			{
 				"name": "Ingest all tables",
 				"type": "ForEach",
-				"state": "Inactive",
-				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [
 					{
 						"activity": "Read Source Tables List",
@@ -73,7 +71,7 @@
 									{
 										"type": "Query",
 										"text": {
-											"value": "insert into [ctrl].[audit_log] (\n--[audit_id]\n      [adf_run_id]\n      ,[table_id]\n      ,[stage]\n      ,[status]\n      --,[records_written]\n      ,[start_time]\n      --,[end_time]\n      --,[created_timestamp]\n)\nvalues('@{pipeline().parameters.adf_run_id}',@{item().table_id},'SOURCE_TO_SILVER','IN_PROGRESS',SYSUTCDATETIME())",
+											"value": "insert into [ctrl].[audit_log] (\n--[audit_id]\n      [adf_run_id]\n      ,[table_id]\n      ,[stage]\n      ,[status]\n      --,[records_written]\n      ,[start_time]\n      --,[end_time]\n      --,[created_timestamp]\n)\nvalues(\n      '@{pipeline().parameters.adf_run_id}',\n       @{item().table_id},\n       'SILVER_TO_GOLD',\n       'IN_PROGRESS',\n       SYSUTCDATETIME()\n)",
 											"type": "Expression"
 										}
 									}
@@ -86,7 +84,7 @@
 							"type": "Script",
 							"dependsOn": [
 								{
-									"activity": "Landing to Bronze",
+									"activity": "Silver to Gold",
 									"dependencyConditions": [
 										"Failed"
 									]
@@ -118,7 +116,7 @@
 							}
 						},
 						{
-							"name": "Landing to Bronze",
+							"name": "Silver to Gold",
 							"type": "DatabricksNotebook",
 							"dependsOn": [
 								{
@@ -137,24 +135,9 @@
 							},
 							"userProperties": [],
 							"typeProperties": {
-								"notebookPath": "/abchospital-repo/abc_hospital_repo/azure-adb/Landing_to_Bronze",
-								"baseParameters": {
-									"source_system": {
-										"value": "@activity('Read Table Details').output.firstRow.source_system",
-										"type": "Expression"
-									},
-									"table_name": {
-										"value": "@activity('Read Table Details').output.firstRow.bronze_table_name",
-										"type": "Expression"
-									},
-									"landing_timestamp": {
-										"value": "@variables('start_time')",
-										"type": "Expression"
-									},
-									"source_file_format": {
-										"value": "@coalesce(activity('Read Table Details').output.firstRow.source_file_format,'')",
-										"type": "Expression"
-									}
+								"notebookPath": {
+									"value": "/abchospital-repo/abc_hospital_repo/azure-adb/Gold/NB_@{item().gold_table_name}",
+									"type": "Expression"
 								}
 							},
 							"linkedServiceName": {
