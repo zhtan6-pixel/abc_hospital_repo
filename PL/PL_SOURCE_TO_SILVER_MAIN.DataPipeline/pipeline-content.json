@@ -1,0 +1,204 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "FabricSqlDatabaseSource",
+            "sqlReaderQuery": {
+              "value": "select table_id \nfrom ctrl.table_config \nwhere is_active = 1 \nand source_system = '@{pipeline().parameters.source_system}' \norder by table_id;",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "FabricSqlDatabaseTable",
+            "typeProperties": {
+              "schema": "ctrl",
+              "table": "table_config"
+            },
+            "schema": [],
+            "connectionSettings": {
+              "name": "DB_Metadata",
+              "properties": {
+                "type": "FabricSqlDatabase",
+                "typeProperties": {
+                  "artifactId": "3b0b4ba2-5591-94d4-4264-f70527d632ba",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                },
+                "externalReferences": {
+                  "connection": "e185476b-33e3-4ea4-ad44-706a5634bc3e"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Read Source Tables List",
+        "dependsOn": []
+      },
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "items": {
+            "value": "@activity('Read Source Tables List').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "Script",
+              "typeProperties": {
+                "scripts": [
+                  {
+                    "text": {
+                      "value": "insert into [ctrl].[audit_log] (\n--[audit_id]\n      [adf_run_id]\n      ,[table_id]\n      ,[stage]\n      ,[status]\n      --,[records_written]\n      ,[start_time]\n      --,[end_time]\n      --,[created_timestamp]\n)\nvalues(\n    '@{pipeline().parameters.run_id}',\n    @{item().table_id},\n    'SOURCE_TO_SILVER',\n    'IN_PROGRESS',\n    SYSUTCDATETIME()\n)",
+                      "type": "Expression"
+                    },
+                    "type": "Query"
+                  }
+                ],
+                "scriptBlockExecutionTimeout": "02:00:00"
+              },
+              "linkedService": {
+                "name": "WH_Hospital_Project",
+                "properties": {
+                  "type": "DataWarehouse",
+                  "typeProperties": {
+                    "artifactId": "a98f074c-0bf8-86c1-4638-28638ff51d2b",
+                    "endpoint": "on5oue4otmdeldszoxpe6wtpta-hl6m6bsupjoejodsviljomnup4.datawarehouse.fabric.microsoft.com",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "Insert In Progress Status",
+              "dependsOn": []
+            },
+            {
+              "type": "Script",
+              "typeProperties": {
+                "scripts": [
+                  {
+                    "text": {
+                      "value": "update [ctrl].[audit_log] \nset [status] = 'Failed', [end_time] = SYSUTCDATETIME()\nwhere [adf_run_id] = '@{pipeline().parameters.run_id}' and [table_id] = @{item().table_id}",
+                      "type": "Expression"
+                    },
+                    "type": "Query"
+                  }
+                ],
+                "scriptBlockExecutionTimeout": "02:00:00"
+              },
+              "linkedService": {
+                "name": "WH_Hospital_Project",
+                "properties": {
+                  "type": "DataWarehouse",
+                  "typeProperties": {
+                    "artifactId": "a98f074c-0bf8-86c1-4638-28638ff51d2b",
+                    "endpoint": "on5oue4otmdeldszoxpe6wtpta-hl6m6bsupjoejodsviljomnup4.datawarehouse.fabric.microsoft.com",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "Update Failed Status",
+              "dependsOn": [
+                {
+                  "activity": "Ingest from Source to Silver",
+                  "dependencyConditions": [
+                    "Failed"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "InvokePipeline",
+              "typeProperties": {
+                "parameters": {
+                  "table_id": {
+                    "value": "@item().table_id",
+                    "type": "Expression"
+                  },
+                  "run_id": {
+                    "value": "@pipeline().parameters.run_id",
+                    "type": "Expression"
+                  }
+                },
+                "waitOnCompletion": true,
+                "workspaceId": "00000000-0000-0000-0000-000000000000",
+                "pipelineId": "89c778e4-d45c-8f56-4be2-5bf35735664b",
+                "operationType": "InvokeFabricPipeline"
+              },
+              "externalReferences": {
+                "connection": "f3c6b57e-5732-4f6f-ac8c-3124caa30112"
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "Ingest from Source to Silver",
+              "dependsOn": [
+                {
+                  "activity": "Insert In Progress Status",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "name": "Ingest all tables",
+        "dependsOn": [
+          {
+            "activity": "Read Source Tables List",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "source_system": {
+        "type": "string",
+        "defaultValue": "neon_postgres"
+      },
+      "run_id": {
+        "type": "string"
+      }
+    },
+    "variables": {
+      "Test for now": {
+        "type": "String"
+      }
+    }
+  }
+}

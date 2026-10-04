@@ -1,4 +1,4 @@
-CREATE TABLE [ctrl].[audit_log] (
+CREATE TABLE [ctrl].[audit_log2] (
     [audit_id]          INT           NULL,
     [adf_run_id]        VARCHAR (MAX) NULL,
     [table_id]          INT           NULL,
