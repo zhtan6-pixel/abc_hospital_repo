@@ -12,7 +12,9 @@
 # CELL ********************
 
 df = spark.read.parquet(
-    "abfss://WS_ABC_Hospital@onelake.dfs.fabric.microsoft.com/LH_Hospital_Project.Lakehouse/Files/landing_old/hospitals_20260928_224142.parquet"
+    "abfss://WS_ABC_Hospital@onelake.dfs.fabric.microsoft.com/LH_Hospital_Project.Lakehouse/Files/landing_old/hospitals_20260928_224142.parquet"  
+
+    
 )
 
 print(df.count())
