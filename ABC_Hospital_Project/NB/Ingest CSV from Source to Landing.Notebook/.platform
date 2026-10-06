@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "Ingest CSV from Source to Landing"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "b200f2b1-9907-8996-4935-d630a05b93c7"
+  }
+}
