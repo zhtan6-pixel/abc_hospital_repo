@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "PL_PostgreSQL_to_Lakehouse"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "5cc3f034-328c-90d2-4c50-029528aa8466"
+  }
+}

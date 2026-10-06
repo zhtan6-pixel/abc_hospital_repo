@@ -1,0 +1,361 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "DataWarehouseSource",
+            "sqlReaderQuery": {
+              "value": "select table_id, gold_table_name  \nfrom ctrl.table_config\nwhere is_active = 1 \nand stage = 'SILVER_TO_GOLD'",
+              "type": "Expression"
+            },
+            "partitionOption": "None",
+            "queryTimeout": "02:00:00"
+          },
+          "datasetSettings": {
+            "type": "DataWarehouseTable",
+            "schema": [],
+            "linkedService": {
+              "name": "WH_Hospital_Project",
+              "properties": {
+                "type": "DataWarehouse",
+                "typeProperties": {
+                  "artifactId": "a98f074c-0bf8-86c1-4638-28638ff51d2b",
+                  "endpoint": "on5oue4otmdeldszoxpe6wtpta-hl6m6bsupjoejodsviljomnup4.datawarehouse.fabric.microsoft.com",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          },
+          "firstRowOnly": false
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "Read Source Tables List",
+        "dependsOn": []
+      },
+      {
+        "type": "ForEach",
+        "typeProperties": {
+          "isSequential": true,
+          "items": {
+            "value": "@activity('Read Source Tables List').output.value",
+            "type": "Expression"
+          },
+          "activities": [
+            {
+              "type": "Script",
+              "typeProperties": {
+                "scripts": [
+                  {
+                    "text": {
+                      "value": "declare @max_id bigint\nselect @max_id = max(audit_id) from [ctrl].[audit_log]\ninsert into [ctrl].[audit_log] (\n    [audit_id],\n    [adf_run_id],\n    [table_id],\n    [stage],\n    [status],\n    [start_time],\n    [created_timestamp]\n)\nvalues(\n    @max_id + 1,\n    '@{pipeline().parameters.run_id}',\n    @{item().table_id},\n    'SILVER_TO_GOLD',\n    'IN_PROGRESS',\n    SYSUTCDATETIME(),\n    SYSUTCDATETIME()\n)\n\n/*\ninsert into [ctrl].[audit_log] (\n--[audit_id]\n      [adf_run_id]\n      ,[table_id]\n      ,[stage]\n      ,[status]\n      --,[records_written]\n      ,[start_time]\n      --,[end_time]\n      --,[created_timestamp]\n)\nvalues(\n      '@{pipeline().parameters.run_id}',\n       @{item().table_id},\n       'SILVER_TO_GOLD',\n       'IN_PROGRESS',\n       SYSUTCDATETIME()\n)\n*/",
+                      "type": "Expression"
+                    },
+                    "type": "Query"
+                  }
+                ],
+                "scriptBlockExecutionTimeout": "02:00:00"
+              },
+              "linkedService": {
+                "name": "WH_Hospital_Project",
+                "properties": {
+                  "type": "DataWarehouse",
+                  "typeProperties": {
+                    "artifactId": "a98f074c-0bf8-86c1-4638-28638ff51d2b",
+                    "endpoint": "on5oue4otmdeldszoxpe6wtpta-hl6m6bsupjoejodsviljomnup4.datawarehouse.fabric.microsoft.com",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "Insert In Progress Status",
+              "dependsOn": []
+            },
+            {
+              "type": "Script",
+              "typeProperties": {
+                "scripts": [
+                  {
+                    "text": {
+                      "value": "@concat(\n'UPDATE [ctrl].[audit_log]\nSET [status] = ''SUCCESS'',\n    [end_time] = SYSUTCDATETIME(),\n    [records_written] = ',\nvariables('row_count'),\n'\nWHERE [adf_run_id] = ''',\npipeline().parameters.run_id,\n'''\nAND [table_id] = ',\nstring(item().table_id)\n)",
+                      "type": "Expression"
+                    },
+                    "type": "Query"
+                  }
+                ],
+                "scriptBlockExecutionTimeout": "02:00:00"
+              },
+              "linkedService": {
+                "name": "WH_Hospital_Project",
+                "properties": {
+                  "type": "DataWarehouse",
+                  "typeProperties": {
+                    "artifactId": "a98f074c-0bf8-86c1-4638-28638ff51d2b",
+                    "endpoint": "on5oue4otmdeldszoxpe6wtpta-hl6m6bsupjoejodsviljomnup4.datawarehouse.fabric.microsoft.com",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 3,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "Update Success Status",
+              "dependsOn": [
+                {
+                  "activity": "Switch1",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Script",
+              "typeProperties": {
+                "scripts": [
+                  {
+                    "text": {
+                      "value": "update [ctrl].[audit_log] \nset [status] = 'Failed', [end_time] = SYSUTCDATETIME()\nwhere [adf_run_id] = '@{pipeline().parameters.run_id}' and [table_id] = @{item().table_id}",
+                      "type": "Expression"
+                    },
+                    "type": "Query"
+                  }
+                ],
+                "scriptBlockExecutionTimeout": "02:00:00"
+              },
+              "linkedService": {
+                "name": "WH_Hospital_Project",
+                "properties": {
+                  "type": "DataWarehouse",
+                  "typeProperties": {
+                    "artifactId": "a98f074c-0bf8-86c1-4638-28638ff51d2b",
+                    "endpoint": "on5oue4otmdeldszoxpe6wtpta-hl6m6bsupjoejodsviljomnup4.datawarehouse.fabric.microsoft.com",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000"
+                  },
+                  "annotations": []
+                }
+              },
+              "policy": {
+                "timeout": "0.12:00:00",
+                "retry": 0,
+                "retryIntervalInSeconds": 30,
+                "secureInput": false,
+                "secureOutput": false
+              },
+              "name": "Update Failed Status",
+              "dependsOn": [
+                {
+                  "activity": "Switch1",
+                  "dependencyConditions": [
+                    "Failed"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "Switch",
+              "typeProperties": {
+                "on": {
+                  "value": "@item().gold_table_name",
+                  "type": "Expression"
+                },
+                "cases": [
+                  {
+                    "value": "lab_test_trends",
+                    "activities": [
+                      {
+                        "type": "TridentNotebook",
+                        "typeProperties": {
+                          "notebookId": "4d369347-3a2a-9fe1-4958-c296e4432334",
+                          "workspaceId": "00000000-0000-0000-0000-000000000000"
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 3,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false,
+                          "exponentialRetry": true,
+                          "maxRetryIntervalInSeconds": 300
+                        },
+                        "name": "NB_lab_test_trends",
+                        "dependsOn": []
+                      },
+                      {
+                        "type": "SetVariable",
+                        "typeProperties": {
+                          "variableName": "row_count",
+                          "value": {
+                            "value": "@activity('NB_lab_test_trends').output.result.exitValue",
+                            "type": "Expression"
+                          }
+                        },
+                        "policy": {
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "Set row count variable",
+                        "dependsOn": [
+                          {
+                            "activity": "NB_lab_test_trends",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "value": "patient_360",
+                    "activities": [
+                      {
+                        "type": "TridentNotebook",
+                        "typeProperties": {
+                          "notebookId": "d1751fb8-a893-be0d-4f28-acb00fa1a90e",
+                          "workspaceId": "00000000-0000-0000-0000-000000000000"
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 3,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false,
+                          "exponentialRetry": true,
+                          "maxRetryIntervalInSeconds": 300
+                        },
+                        "name": "NB_patient_360",
+                        "dependsOn": []
+                      },
+                      {
+                        "type": "SetVariable",
+                        "typeProperties": {
+                          "variableName": "row_count",
+                          "value": {
+                            "value": "@activity('NB_patient_360').output.result.exitValue",
+                            "type": "Expression"
+                          }
+                        },
+                        "policy": {
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "Set row count variable_copy1",
+                        "dependsOn": [
+                          {
+                            "activity": "NB_patient_360",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "value": "hospital_daily_summary",
+                    "activities": [
+                      {
+                        "type": "TridentNotebook",
+                        "typeProperties": {
+                          "notebookId": "c5deca28-caaa-86a2-45ad-8bc9ed50bfce",
+                          "workspaceId": "00000000-0000-0000-0000-000000000000"
+                        },
+                        "policy": {
+                          "timeout": "0.12:00:00",
+                          "retry": 3,
+                          "retryIntervalInSeconds": 30,
+                          "secureInput": false,
+                          "secureOutput": false,
+                          "exponentialRetry": true,
+                          "maxRetryIntervalInSeconds": 300
+                        },
+                        "name": "NB_hospital_daily_summary",
+                        "dependsOn": []
+                      },
+                      {
+                        "type": "SetVariable",
+                        "typeProperties": {
+                          "variableName": "row_count",
+                          "value": {
+                            "value": "@activity('NB_hospital_daily_summary').output.result.exitValue",
+                            "type": "Expression"
+                          }
+                        },
+                        "policy": {
+                          "secureInput": false,
+                          "secureOutput": false
+                        },
+                        "name": "Set row count variable_copy1_copy1",
+                        "dependsOn": [
+                          {
+                            "activity": "NB_hospital_daily_summary",
+                            "dependencyConditions": [
+                              "Succeeded"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "defaultActivities": []
+              },
+              "name": "Switch1",
+              "dependsOn": [
+                {
+                  "activity": "Insert In Progress Status",
+                  "dependencyConditions": [
+                    "Succeeded"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "name": "Ingest all tables",
+        "dependsOn": [
+          {
+            "activity": "Read Source Tables List",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      }
+    ],
+    "parameters": {
+      "run_id": {
+        "type": "string",
+        "defaultValue": "a1"
+      }
+    },
+    "variables": {
+      "row_count": {
+        "type": "String",
+        "defaultValue": "0"
+      }
+    }
+  }
+}
