@@ -4,6 +4,7 @@
 		"activities": [
 			{
 				"name": "Source to Silver Postgres",
+				"description": "new description",
 				"type": "ExecutePipeline",
 				"dependsOn": [],
 				"policy": {
