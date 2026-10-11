@@ -3,7 +3,7 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "Lookup1",
+				"name": "Read All Tables Status",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
@@ -13,13 +13,47 @@
 					"secureOutput": false,
 					"secureInput": false
 				},
-				"userProperties": []
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT * FROM [ctrl].[audit_log] where adf_run_id = '@{pipeline().parameters.run_id}'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "AzureSqlTable1",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "Prepare Email Body Header",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "body_header",
+					"value": "Ingestion  Transformation process for ABC Hospital Project has been completed and below is the status:"
+				}
 			}
 		],
 		"parameters": {
 			"run_id": {
 				"type": "string",
 				"defaultValue": "05239560-8b63-4f41-b4bd-ef0066ccbd4e"
+			}
+		},
+		"variables": {
+			"body_header": {
+				"type": "String"
 			}
 		},
 		"annotations": []
