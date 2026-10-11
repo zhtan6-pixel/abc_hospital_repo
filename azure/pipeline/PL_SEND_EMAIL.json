@@ -1,0 +1,12 @@
+{
+	"name": "PL_SEND_EMAIL",
+	"properties": {
+		"parameters": {
+			"run_id": {
+				"type": "string",
+				"defaultValue": "05239560-8b63-4f41-b4bd-ef0066ccbd4e"
+			}
+		},
+		"annotations": []
+	}
+}
