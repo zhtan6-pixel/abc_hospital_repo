@@ -78,7 +78,7 @@
 				"typeProperties": {
 					"variableName": "email_subject",
 					"value": {
-						"value": "@{pipeline().globalParameters.env} | @{if(greater(activity('Check overall failed count').output.firstRow.count , 0), '', '')} | ABC HOSPITAL MASTER RUN",
+						"value": "@{pipeline().globalParameters.env} | @{if(greater(activity('Check overall failed count').output.firstRow.count , 0), 'FAILURE', 'SUCCESS')} | ABC HOSPITAL MASTER RUN",
 						"type": "Expression"
 					}
 				}
