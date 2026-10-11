@@ -18,7 +18,7 @@
 					"source": {
 						"type": "AzureSqlSource",
 						"sqlReaderQuery": {
-							"value": "SELECT * FROM [ctrl].[audit_log] where adf_run_id = '@{pipeline().parameters.run_id}'",
+							"value": "SELECT * FROM [ctrl].[audit_log] \nwhere adf_run_id = '@{pipeline().parameters.run_id}'",
 							"type": "Expression"
 						},
 						"queryTimeout": "02:00:00",
