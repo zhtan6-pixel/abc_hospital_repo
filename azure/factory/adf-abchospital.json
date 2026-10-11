@@ -1,6 +1,12 @@
 {
 	"name": "adf-abchospital",
 	"properties": {
+		"globalParameters": {
+			"email_recipient": {
+				"type": "string",
+				"value": "zhtan6@gmail.com"
+			}
+		},
 		"trustModeClaimForMi": {
 			"value": "Disabled",
 			"editable": true
